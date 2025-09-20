@@ -1,0 +1,11 @@
+# .github/workflows/ping.yml
+name: Ping Render Site
+on:
+  schedule:
+    - cron: "*/10 * * * *"  # every 10 minutes
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping site
+        run: curl https://talentflow-6gh6.onrender.com
