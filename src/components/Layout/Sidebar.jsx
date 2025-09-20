@@ -61,7 +61,7 @@ export default function Sidebar() {
       <Separator />
 
       {/* Bottom Section */}
-      <div className="p-4 space-y-2">
+      {/* <div className="p-4 space-y-2">
         <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-foreground">
           <Settings className="w-5 h-5 mr-3" />
           Settings
@@ -70,7 +70,7 @@ export default function Sidebar() {
           <LogOut className="w-5 h-5 mr-3" />
           Sign Out
         </Button>
-      </div>
+      </div> */}
     </div>
   );
 }
