@@ -51,8 +51,8 @@ export default function JobCard({
   const [hasAssessment, setHasAssessment] = useState(false);
   const [assessmentLoading, setAssessmentLoading] = useState(true);
 
-  // Check if this job has pending optimistic updates
-  const hasPendingUpdate = optimisticUpdates.has(job.id);
+  // FIXED: Changed from Map.has() to object property check
+  const hasPendingUpdate = job.id in optimisticUpdates;
 
   const getJobStats = async (jobId) => {
     try {
