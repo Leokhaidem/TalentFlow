@@ -122,10 +122,6 @@ src/
 - Full timeline history for all candidate interactions
 
 ## Live Demo
-https://talentflow-6gh6.onrender.com
 
-## Known Limitations / Usage Notes for the Live Demo
+https://talent-flow-theta.vercel.app/
 
-- On the live demo, the homepage appears almost instantly, but **all data may take a few seconds to fully load** in the browser.
-- **Do not navigate away immediately** from the first page; waiting a few seconds ensures that data is loaded properly.
-- Navigating too quickly before the data is ready may cause temporary crashes or missing information.
