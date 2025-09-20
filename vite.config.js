@@ -14,5 +14,12 @@ export default defineConfig({
   optimizeDeps: {
     include: ["react-window"],
   },
-  base: './',
+  build: {
+    rollupOptions: {
+      input: {
+        main: "index.html",
+      },
+    },
+  },
+  base: "./",
 });
