@@ -42,30 +42,33 @@ export default function Dashboard() {
 
   useEffect(() => {
     // Calculate stats when data loads
-    const activeJobs = jobs.filter((job) => job.status === "active").length;
-    const newApplications = candidates.filter((candidate) => {
+    const safeJobs = jobs || [];
+    const safeCandidates = candidates || [];
+    
+    const activeJobs = safeJobs.filter((job) => job.status === "active").length;
+    const newApplications = safeCandidates.filter((candidate) => {
       const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
       return new Date(candidate.createdAt) > dayAgo;
     }).length;
 
     setStats({
-      totalJobs: jobs.length,
+      totalJobs: safeJobs.length,
       activeJobs,
-      totalCandidates: candidates.length,
+      totalCandidates: safeCandidates.length,
       newApplications,
-      hired: candidates.filter((c) => c.stage === "hired").length,
-      pending: candidates.filter(
+      hired: safeCandidates.filter((c) => c.stage === "hired").length,
+      pending: safeCandidates.filter(
         (c) => !["hired", "rejected"].includes(c.stage)
       ).length,
     });
   }, [jobs, candidates]);
 
-  const recentJobs = jobs
+  const recentJobs = (jobs || [])
     .filter((job) => job.status === "active")
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 5);
 
-  const recentCandidates = candidates
+  const recentCandidates = (candidates || [])
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 8);
 

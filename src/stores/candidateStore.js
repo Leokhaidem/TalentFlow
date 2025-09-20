@@ -416,7 +416,7 @@ const useCandidateStore = create(
       // Filter candidates locally
       filterCandidates: () => {
         const { candidates, searchTerm, stageFilter } = get();
-        let filtered = [...candidates];
+        let filtered = [...(candidates || [])];
 
         if (searchTerm) {
           filtered = filtered.filter(

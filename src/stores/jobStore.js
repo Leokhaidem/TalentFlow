@@ -206,7 +206,7 @@ const useJobStore = create(
         // Filter and sort jobs (local)
         filterJobs: () => {
           const { jobs, searchTerm, statusFilter, sortBy } = get();
-          let filtered = [...jobs];
+          let filtered = [...(jobs || [])];
 
           if (searchTerm) {
             const lower = searchTerm.toLowerCase();

@@ -373,7 +373,3 @@ export class TalentFlowDB extends Dexie {
 
 export const db = new TalentFlowDB();
 
-// Initialize database and seed data
-db.open().then(() => {
-  db.seedData();
-});

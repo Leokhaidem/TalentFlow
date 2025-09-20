@@ -9,8 +9,8 @@ const simulateNetworkConditions = async () => {
   // Random delay between 200-1200ms
   await delay(200 + Math.random() * 1000);
 
-  // 5-10% chance of error on write operations
-  if (Math.random() < 0.075) {
+  // Only simulate errors in development
+  if (import.meta.env.DEV && Math.random() < 0.075) {
     throw new Error("Simulated network error");
   }
 };
@@ -18,7 +18,6 @@ const simulateNetworkConditions = async () => {
 // API Handlers
 const handlers = [
   // Jobs endpoints
-  // inside handlers array: replace the existing http.get("/api/jobs", ...)
   http.get("/api/jobs", async ({ request }) => {
     // small read delay
     await delay(100 + Math.random() * 300);
@@ -257,7 +256,7 @@ const handlers = [
       candidates = candidates.filter((candidate) => candidate.jobId === jobId);
     }
 
-    // 🚀 Return all candidates directly (no pagination)
+    // Return all candidates directly (no pagination)
     return HttpResponse.json({
       data: candidates,
     });
@@ -536,13 +535,23 @@ const handlers = [
 // Setup MSW worker
 export const worker = setupWorker(...handlers);
 
-// Start the worker in development
-if (import.meta.env.DEV) {
+// Start the worker - FIXED: Now works in both development and production
+// Only suppress console logs in production for cleaner experience
+const shouldStart = true; // Always start MSW for this demo app
+const isProduction = !import.meta.env.DEV;
+
+if (shouldStart) {
   worker
     .start({
       onUnhandledRequest: "bypass",
+      quiet: isProduction, // Suppress logs in production
     })
     .then(() => {
-      console.log("🔧 Mock Service Worker started");
+      if (!isProduction) {
+        console.log("🔧 Mock Service Worker started");
+      }
+    })
+    .catch((error) => {
+      console.error("Failed to start MSW:", error);
     });
 }
