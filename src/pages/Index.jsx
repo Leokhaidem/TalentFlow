@@ -70,7 +70,7 @@ export default function Index() {
             </span>
           </div>
           <Link to="/app">
-            <Button className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth">
+            <Button className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth cursor-pointer">
               Launch App
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
@@ -102,7 +102,7 @@ export default function Index() {
             <Link to="/app">
               <Button
                 size="lg"
-                className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth"
+                className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth cursor-pointer"
               >
                 Get Started
                 <ArrowRight className="w-5 h-5 ml-2" />
@@ -152,24 +152,24 @@ export default function Index() {
       </section>
 
       {/* Stats Section */}
-      <section className="container mx-auto px-6 py-16 ">
-        <Card className="card-elevated bg-gradient-to-r from-primary/5 to-primary-hover/5 border-primary/10">
-          <CardContent className="p-12 items-center">
-            <div className="flex justify-center gap-16 text-center">
+      <section className="container mx-auto px-6 py-16 flex justify-center">
+        <Card className="card-elevated max-w-lg w-full bg-gradient-to-r from-primary/5 to-primary-hover/5 border-primary/10">
+          <CardContent className="p-8">
+            <div className="flex justify-between text-center">
               <div>
-                <div className="text-4xl font-bold text-primary mb-2">
+                <div className="text-3xl font-bold text-primary mb-2">
                   1000+
                 </div>
-                <div className="text-muted-foreground">Candidate Profiles</div>
+                <div className="text-sm text-muted-foreground">
+                  Candidate Profiles
+                </div>
               </div>
               <div>
-                <div className="text-4xl font-bold text-primary mb-2">25+</div>
-                <div className="text-muted-foreground">Job Positions</div>
+                <div className="text-3xl font-bold text-primary mb-2">25+</div>
+                <div className="text-sm text-muted-foreground">
+                  Job Positions
+                </div>
               </div>
-              {/* <div>
-                <div className="text-4xl font-bold text-primary mb-2">100%</div>
-                <div className="text-muted-foreground">Local Storage</div>
-              </div> */}
             </div>
           </CardContent>
         </Card>
@@ -188,7 +188,7 @@ export default function Index() {
           <Link to="/app">
             <Button
               size="lg"
-              className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth"
+              className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth cursor-pointer"
             >
               Start Your Journey
               <ArrowRight className="w-5 h-5 ml-2" />

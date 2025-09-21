@@ -370,15 +370,10 @@ export default function JobCard({
               {hasAssessment ? "Edit" : "Create"} Assessment
             </Button>
 
-            <Button
-              variant="outline"
-              size="sm"
-              // onClick={handleViewCandidates}
-              className="text-xs"
-            >
+            <div className="text-xs inline-flex items-center justify-center rounded-md border border-muted bg-muted/40 px-3 py-1.5 text-muted-foreground">
               <Users className="w-3 h-3 mr-1" />
               Candidates ({stats.total})
-            </Button>
+            </div>
           </div>
         )}
       </CardContent>
