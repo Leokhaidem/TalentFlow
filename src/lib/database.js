@@ -88,7 +88,7 @@ export class TalentFlowDB extends Dexie {
       department: departments[Math.floor(Math.random() * departments.length)],
       location: locations[Math.floor(Math.random() * locations.length)],
       tags: tags.slice(0, Math.floor(Math.random() * 5) + 1),
-      order: index,
+      order: index + 1,
       description: `We are looking for a talented ${title} to join our growing team. This is an exciting opportunity to work on cutting-edge projects and make a real impact.`,
       createdAt: new Date(
         Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000

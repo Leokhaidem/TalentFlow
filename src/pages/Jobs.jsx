@@ -10,7 +10,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, Filter, Briefcase, GripVertical } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Filter,
+  Briefcase,
+  GripVertical,
+  ArrowUpDown,
+} from "lucide-react";
 import {
   DndContext,
   DragOverlay,
@@ -51,7 +58,6 @@ export default function Jobs() {
     clearError,
   } = useJobStore();
 
-  // Local state
   const [searchTerm, setSearchTerm] = useState(
     searchParams.get("search") || ""
   );
@@ -59,6 +65,11 @@ export default function Jobs() {
     searchParams.get("status") || "all"
   );
   const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
+  const [customOrderEnabled, setCustomOrderEnabled] = useState(
+    searchParams.get("sort") === "order"
+  );
+  const [hasLoadedCustomOrder, setHasLoadedCustomOrder] = useState(false);
+  const [hasCustomOrderData, setHasCustomOrderData] = useState(false);
   const [currentPage, setCurrentPage] = useState(
     Number.parseInt(searchParams.get("page") || "1")
   );
@@ -67,18 +78,16 @@ export default function Jobs() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [jobToEdit, setJobToEdit] = useState(null);
 
-  // Drag and drop state
   const [activeJob, setActiveJob] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Debounce search term to avoid too many API calls
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5, // Reduced distance for more responsive dragging
-        delay: 50, // Small delay to distinguish from clicks
+        distance: 5,
+        delay: 50,
         tolerance: 3,
       },
     }),
@@ -87,23 +96,58 @@ export default function Jobs() {
     })
   );
 
-  // Load jobs when filters change
   useEffect(() => {
-    loadJobs(currentPage, 10, debouncedSearchTerm, statusFilter, sortBy);
-  }, [currentPage, debouncedSearchTerm, statusFilter, sortBy, loadJobs]);
+    const effectiveSortBy = customOrderEnabled ? "order" : sortBy;
+    loadJobs(
+      currentPage,
+      10,
+      debouncedSearchTerm,
+      statusFilter,
+      effectiveSortBy
+    );
+  }, [
+    currentPage,
+    debouncedSearchTerm,
+    statusFilter,
+    sortBy,
+    loadJobs,
+  ]);
 
-  // Update URL search params when filters change
+  // Handle switching to custom order - preserve custom order data when toggling
+  useEffect(() => {
+    if (customOrderEnabled && !hasLoadedCustomOrder) {
+      // Only reload when first enabling custom order AND we don't have custom order data yet
+      loadJobs(currentPage, 10, debouncedSearchTerm, statusFilter, "order");
+      setHasLoadedCustomOrder(true);
+      setHasCustomOrderData(true);
+    } else if (!customOrderEnabled && hasLoadedCustomOrder) {
+      // When disabling custom order, just change the flag - don't reload
+      setHasLoadedCustomOrder(false);
+    } else if (customOrderEnabled && hasCustomOrderData) {
+      // When re-enabling custom order and we already have custom order data, don't reload
+      setHasLoadedCustomOrder(true);
+    }
+  }, [customOrderEnabled, hasLoadedCustomOrder, hasCustomOrderData, loadJobs, currentPage, debouncedSearchTerm, statusFilter]);
+
   useEffect(() => {
     const params = new URLSearchParams();
     if (debouncedSearchTerm) params.set("search", debouncedSearchTerm);
     if (statusFilter !== "all") params.set("status", statusFilter);
-    if (sortBy !== "newest") params.set("sort", sortBy);
+
+    const effectiveSortBy = customOrderEnabled ? "order" : sortBy;
+    if (effectiveSortBy !== "newest") params.set("sort", effectiveSortBy);
     if (currentPage !== 1) params.set("page", currentPage.toString());
 
     setSearchParams(params);
-  }, [debouncedSearchTerm, statusFilter, sortBy, currentPage, setSearchParams]);
+  }, [
+    debouncedSearchTerm,
+    statusFilter,
+    sortBy,
+    customOrderEnabled,
+    currentPage,
+    setSearchParams,
+  ]);
 
-  // Clear error when component mounts or when filters change
   useEffect(() => {
     if (error) {
       const timer = setTimeout(() => clearError(), 5000);
@@ -113,7 +157,7 @@ export default function Jobs() {
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
-    setCurrentPage(1); // Reset to first page when searching
+    setCurrentPage(1);
   };
 
   const handleStatusChange = (value) => {
@@ -126,9 +170,16 @@ export default function Jobs() {
     setCurrentPage(1);
   };
 
+  const handleCustomOrderToggle = () => {
+    const newCustomOrderEnabled = !customOrderEnabled;
+    setCustomOrderEnabled(newCustomOrderEnabled);
+    setCurrentPage(1);
+  };
+
   const handlePageChange = (page) => {
     setCurrentPage(page);
-    loadJobs(page, 10, debouncedSearchTerm, statusFilter, sortBy);
+    const effectiveSortBy = customOrderEnabled ? "order" : sortBy;
+    loadJobs(page, 10, debouncedSearchTerm, statusFilter, effectiveSortBy);
   };
 
   const handleCreateJob = () => {
@@ -141,7 +192,6 @@ export default function Jobs() {
     setIsCreateModalOpen(true);
   };
 
-  // Updated: Handle quick view (modal)
   const handleQuickViewJob = async (job) => {
     const fetched = await getJob(job.id);
     if (fetched) {
@@ -150,7 +200,6 @@ export default function Jobs() {
     }
   };
 
-  // New: Handle view details (navigate to detail page)
   const handleViewJobDetails = (job) => {
     navigate(`/app/jobs/${job.id}`);
   };
@@ -166,53 +215,44 @@ export default function Jobs() {
     if (job) {
       setActiveJob(job);
       setIsDragging(true);
-      console.log("[v0] Drag started for job:", job.title);
     }
   };
 
   const handleDragEnd = async (event) => {
     const { active, over } = event;
 
-    console.log("[v0] Drag ended - Active:", active?.id, "Over:", over?.id);
-
     setActiveJob(null);
     setIsDragging(false);
 
     if (!over || active.id === over.id) {
-      console.log("[v0] No valid drop target or same position");
       return;
     }
 
     try {
-      console.log("[v0] Attempting to reorder jobs");
-
-      // Find the indices of the active and over items
       const activeIndex = jobs.findIndex((job) => job.id === active.id);
       const overIndex = jobs.findIndex((job) => job.id === over.id);
 
       if (activeIndex !== -1 && overIndex !== -1) {
-        // Calculate new order based on grid position
-        const activeJob = jobs[activeIndex];
-        const overJob = jobs[overIndex];
-
-        // Use the over job's order as the new position
-        await reorderJobs(active.id, over.id, overJob.order);
-        console.log("[v0] Jobs reordered successfully");
+        // Calculate the new position based on the drop position
+        const newPosition = overIndex + 1; // +1 because order starts from 1
+        console.log(`[Frontend] Moving job from position ${activeIndex + 1} to position ${newPosition}`);
+        await reorderJobs(active.id, over.id, newPosition);
+        // Mark that we have custom order data after reordering
+        setHasCustomOrderData(true);
       }
     } catch (error) {
-      console.error("[v0] Failed to reorder jobs:", error);
+      console.error("Failed to reorder jobs:", error);
     }
   };
 
   const handleDragCancel = () => {
-    console.log("[v0] Drag cancelled");
     setActiveJob(null);
     setIsDragging(false);
   };
 
-  // Check if drag and drop should be enabled
   const isDragDropEnabled =
-    sortBy === "order" && !searchTerm && statusFilter === "all";
+    customOrderEnabled && !searchTerm && statusFilter === "all";
+  const canEnableCustomOrder = !searchTerm && statusFilter === "all";
 
   if (loading && jobs.length === 0) {
     return (
@@ -246,7 +286,6 @@ export default function Jobs() {
 
   return (
     <div className="p-8 space-y-8">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Jobs</h1>
@@ -263,7 +302,6 @@ export default function Jobs() {
         </Button>
       </div>
 
-      {/* Error Display */}
       {error && (
         <Card className="border-destructive bg-destructive/5">
           <CardContent className="p-4">
@@ -284,7 +322,6 @@ export default function Jobs() {
         </Card>
       )}
 
-      {/* Filters */}
       <Card className="card-elevated">
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row gap-4">
@@ -310,8 +347,16 @@ export default function Jobs() {
               </SelectContent>
             </Select>
 
-            <Select value={sortBy} onValueChange={handleSortChange}>
-              <SelectTrigger className="w-full sm:w-48">
+            <Select
+              value={sortBy}
+              onValueChange={handleSortChange}
+              disabled={customOrderEnabled}
+            >
+              <SelectTrigger
+                className={`w-full sm:w-48 ${
+                  customOrderEnabled ? "opacity-50" : ""
+                }`}
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -319,12 +364,37 @@ export default function Jobs() {
                 <SelectItem value="oldest">Oldest First</SelectItem>
                 <SelectItem value="title">Title A-Z</SelectItem>
                 <SelectItem value="department">Department</SelectItem>
-                <SelectItem value="order">Custom Order</SelectItem>
               </SelectContent>
             </Select>
+
+            <Button
+              variant={customOrderEnabled ? "default" : "outline"}
+              onClick={handleCustomOrderToggle}
+              disabled={!canEnableCustomOrder}
+              className={`w-full sm:w-auto ${
+                customOrderEnabled
+                  ? "bg-blue-600 hover:bg-blue-700 text-white"
+                  : "hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300"
+              } ${
+                !canEnableCustomOrder ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              title={
+                !canEnableCustomOrder
+                  ? "Clear search and set status to 'All' to enable custom ordering"
+                  : customOrderEnabled
+                  ? "Disable custom ordering"
+                  : "Enable drag & drop ordering"
+              }
+            >
+              <GripVertical className="w-4 h-4 mr-2" />
+              Custom Order
+              {customOrderEnabled && (
+                <div className="ml-2 w-2 h-2 bg-green-400 rounded-full"></div>
+              )}
+            </Button>
           </div>
 
-          {isDragDropEnabled && (
+          {customOrderEnabled && isDragDropEnabled && (
             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center space-x-2 text-sm text-blue-700">
                 <GripVertical className="w-4 h-4" />
@@ -334,18 +404,29 @@ export default function Jobs() {
               </div>
             </div>
           )}
+
+          {customOrderEnabled && !isDragDropEnabled && (
+            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="flex items-center space-x-2 text-sm text-amber-700">
+                <ArrowUpDown className="w-4 h-4" />
+                <span>
+                  Custom ordering is enabled, but drag & drop requires clearing
+                  search filters and showing all jobs
+                </span>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Results Summary */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           Showing {jobs.length} of {pagination?.total} jobs{" "}
           {searchTerm && `(for "${searchTerm}")`}
+          {customOrderEnabled && " - Custom order enabled"}
         </p>
       </div>
 
-      {/* Jobs Grid */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -394,7 +475,6 @@ export default function Jobs() {
         </DragOverlay>
       </DndContext>
 
-      {/* Pagination */}
       {pagination?.totalPages > 1 && (
         <JobsPagination
           currentPage={pagination?.page}
@@ -404,7 +484,6 @@ export default function Jobs() {
         />
       )}
 
-      {/* Empty State */}
       {jobs.length === 0 && !loading && (
         <Card className="card-elevated">
           <CardContent className="flex flex-col items-center justify-center py-12">
@@ -428,7 +507,6 @@ export default function Jobs() {
         </Card>
       )}
 
-      {/* Modals */}
       <CreateJobModal
         isOpen={isCreateModalOpen}
         onClose={handleModalClose}

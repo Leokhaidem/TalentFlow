@@ -75,6 +75,14 @@ const handlers = [
             (a.department || "").localeCompare(b.department || "")
           );
         }
+      } else if (sort === "order") {
+        // custom order by order field
+        try {
+          jobs = await db.jobs.orderBy("order").toArray();
+        } catch (e) {
+          jobs = await db.jobs.toArray();
+          jobs.sort((a, b) => (a.order || 0) - (b.order || 0));
+        }
       } else {
         // fallback = newest
         jobs = await db.jobs.toArray();
@@ -131,13 +139,18 @@ const handlers = [
     await simulateNetworkConditions();
 
     const jobData = await request.json();
+    
+    // Get the highest order number and add 1 for the new job
+    const allJobs = await db.jobs.toArray();
+    const maxOrder = allJobs.reduce((max, job) => Math.max(max, job.order || 0), 0);
+    
     const newJob = {
       id: `job-${Date.now()}`,
       title: jobData.title || "",
       slug: jobData.slug || "",
       status: jobData.status || "active",
       tags: jobData.tags || [],
-      order: jobData.order || 0,
+      order: jobData.order || (maxOrder + 1),
       department: jobData.department,
       location: jobData.location,
       description: jobData.description,
@@ -193,11 +206,46 @@ const handlers = [
     console.log("[MSW] Bulk reordering job:", { jobId, beforeId, newOrder });
 
     try {
-      // Update the specific job with its new order value
-      await db.jobs.update(jobId, {
-        order: newOrder,
-        updatedAt: new Date(),
-      });
+      // Get all jobs sorted by current order
+      const allJobs = await db.jobs.orderBy("order").toArray();
+      
+      // Find the job being moved
+      const jobToMove = allJobs.find(job => job.id === jobId);
+      if (!jobToMove) {
+        throw new Error("Job not found");
+      }
+
+      // Get current position (0-based index)
+      const currentIndex = allJobs.findIndex(job => job.id === jobId);
+      const newIndex = newOrder - 1; // Convert to 0-based index
+
+      console.log(`[MSW] Moving job from position ${currentIndex + 1} to position ${newIndex + 1}`);
+
+      // If moving to the same position, do nothing
+      if (currentIndex === newIndex) {
+        return HttpResponse.json({ data: jobToMove });
+      }
+
+      // Create new array with the job moved
+      const updatedJobs = [...allJobs];
+      
+      // Remove the job from its current position
+      const [movedJob] = updatedJobs.splice(currentIndex, 1);
+      
+      // Insert it at the new position
+      updatedJobs.splice(newIndex, 0, movedJob);
+      
+      // Update all jobs with their new order values
+      const updatePromises = updatedJobs.map((job, index) => 
+        db.jobs.update(job.id, {
+          order: index + 1,
+          updatedAt: new Date(),
+        })
+      );
+      
+      await Promise.all(updatePromises);
+
+      console.log(`[MSW] Updated ${updatedJobs.length} jobs with new order values`);
 
       // Get the updated job
       const updatedJob = await db.jobs.get(jobId);
