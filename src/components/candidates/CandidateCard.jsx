@@ -20,7 +20,9 @@ export default function CandidateCard({
     try {
       e.dataTransfer.setData("text/plain", JSON.stringify(candidate));
       e.dataTransfer.effectAllowed = "move";
+      console.log("Drag started for candidate:", candidate.name, "stage:", candidate.stage);
     } catch (err) {
+      console.error("Error setting drag data:", err);
       // some browsers restrict dataTransfer in certain contexts
     }
     onDragStart?.(candidate);
@@ -71,6 +73,7 @@ export default function CandidateCard({
               e.stopPropagation(); // This prevents the drag from starting
               onViewProfile?.(candidate);
             }}
+            onMouseDown={(e) => e.stopPropagation()} // Prevent drag when clicking button
           >
             <Eye className="h-4 w-4" />
           </Button>
@@ -108,6 +111,7 @@ export default function CandidateCard({
               e.stopPropagation();
               onAddNote?.(candidate);
             }}
+            onMouseDown={(e) => e.stopPropagation()} // Prevent drag when clicking button
           >
             Note
           </Button>

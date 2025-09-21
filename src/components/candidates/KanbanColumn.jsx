@@ -20,8 +20,13 @@ export default function KanbanColumn({ title, stage, candidates, onDrop, onViewP
     setIsDragOver(false);
     try {
       const candidateData = JSON.parse(e.dataTransfer.getData("text/plain"));
-      if (candidateData && candidateData.stage !== stage)
+      console.log("Drop event - candidate:", candidateData?.name, "from stage:", candidateData?.stage, "to stage:", stage);
+      if (candidateData && candidateData.stage !== stage) {
+        console.log("Calling onDrop with candidate:", candidateData.name, "to stage:", stage);
         onDrop?.(candidateData, stage);
+      } else {
+        console.log("Drop ignored - same stage or invalid data");
+      }
     } catch (error) {
       console.error("Error parsing dropped data:", error);
     }
@@ -57,6 +62,7 @@ export default function KanbanColumn({ title, stage, candidates, onDrop, onViewP
                 <CandidateCard
                   key={c.id}
                   candidate={c}
+                  onDragStart={() => {}} // Drag start is handled by the card itself
                   onViewProfile={onViewProfile}
                   onAddNote={onAddNote}
                 />

@@ -63,12 +63,19 @@ export default function Candidates() {
   }, [searchTerm, stageFilter, filterCandidates]);
 
   const handleDrop = async (candidate, newStage) => {
+    console.log("handleDrop called with candidate:", candidate?.name, "to stage:", newStage);
+    console.log("Current filteredCandidates count:", filteredCandidates?.length);
     if (candidate.stage !== newStage) {
       try {
+        console.log("Moving candidate from", candidate.stage, "to", newStage);
         await moveCandidate?.(candidate.id, newStage);
+        console.log("Candidate moved successfully");
+        console.log("Updated filteredCandidates count:", filteredCandidates?.length);
       } catch (err) {
         console.error("moveCandidate failed:", err);
       }
+    } else {
+      console.log("No move needed - same stage");
     }
   };
 
@@ -103,6 +110,7 @@ export default function Candidates() {
     <CandidateCard
       key={candidate.id}
       candidate={candidate}
+      onDragStart={() => {}} // No drag functionality needed in list view
       onViewProfile={(c) => setSelectedCandidate(c)}
       onAddNote={handleAddNote}
     />

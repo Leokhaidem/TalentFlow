@@ -166,7 +166,7 @@ const useCandidateStore = create(
       },
 
       moveCandidate: async (candidateId, newStage) => {
-        const { candidates, selectedCandidate } = get();
+        const { candidates, selectedCandidate, searchTerm, stageFilter } = get();
         const originalCandidates = [...candidates];
         const originalSelectedCandidate = selectedCandidate;
         const currentCandidate = candidates.find((c) => c.id === candidateId);
@@ -180,6 +180,8 @@ const useCandidateStore = create(
           hired: "Hired",
           rejected: "Rejected",
         };
+
+        // Optimistic update
         const updatedCandidates = candidates.map((c) =>
           c.id === candidateId
             ? { ...c, stage: newStage, updatedAt: new Date().toISOString() }
@@ -195,10 +197,26 @@ const useCandidateStore = create(
               }
             : selectedCandidate;
 
-          set({
-            candidates: updatedCandidates,
-            selectedCandidate: updatedSelectedCandidate,
-          });
+        // Apply filters to get updated filteredCandidates
+        let filtered = [...updatedCandidates];
+        if (searchTerm) {
+          filtered = filtered.filter(
+            (candidate) =>
+              candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              candidate.email.toLowerCase().includes(searchTerm.toLowerCase())
+          );
+        }
+        if (stageFilter !== "all") {
+          filtered = filtered.filter(
+            (candidate) => candidate.stage === stageFilter
+          );
+        }
+
+        set({
+          candidates: updatedCandidates,
+          selectedCandidate: updatedSelectedCandidate,
+          filteredCandidates: filtered,
+        });
 
         try {
           const response = await axios.patch(
@@ -209,7 +227,8 @@ const useCandidateStore = create(
             }
           );
 
-          const finalCandidates = candidates.map((c) =>
+          // Update with server response
+          const finalCandidates = updatedCandidates.map((c) =>
             c.id === candidateId ? response.data.data : c
           );
 
@@ -218,9 +237,25 @@ const useCandidateStore = create(
               ? response.data.data
               : selectedCandidate;
 
+          // Apply filters to get final filteredCandidates
+          let finalFiltered = [...finalCandidates];
+          if (searchTerm) {
+            finalFiltered = finalFiltered.filter(
+              (candidate) =>
+                candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                candidate.email.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+          }
+          if (stageFilter !== "all") {
+            finalFiltered = finalFiltered.filter(
+              (candidate) => candidate.stage === stageFilter
+            );
+          }
+
           set({
             candidates: finalCandidates,
             selectedCandidate: finalSelectedCandidate,
+            filteredCandidates: finalFiltered,
           });
 
           if (oldStage !== response.data.data.stage) {
@@ -240,9 +275,25 @@ const useCandidateStore = create(
 
           return response.data.data;
         } catch (error) {
+          // Revert to original state on error
+          let revertedFiltered = [...originalCandidates];
+          if (searchTerm) {
+            revertedFiltered = revertedFiltered.filter(
+              (candidate) =>
+                candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                candidate.email.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+          }
+          if (stageFilter !== "all") {
+            revertedFiltered = revertedFiltered.filter(
+              (candidate) => candidate.stage === stageFilter
+            );
+          }
+
           set({
             candidates: originalCandidates,
             selectedCandidate: originalSelectedCandidate,
+            filteredCandidates: revertedFiltered,
             error: error.message,
           });
           throw error;
