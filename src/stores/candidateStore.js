@@ -14,6 +14,9 @@ const useCandidateStore = create(
       searchTerm: "",
       stageFilter: "all",
 
+      setSearchTerm: (searchTerm) => set({ searchTerm }),
+      setStageFilter: (stageFilter) => set({ stageFilter }),
+
       loadCandidate: async (candidateId) => {
         set({ loading: true, error: null });
         try {

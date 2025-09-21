@@ -36,6 +36,7 @@ const useJobStore = create(
 
         setSelectedJob: (job) => set({ selectedJob: job }),
         clearSelectedJob: () => set({ selectedJob: null }),
+        clearError: () => set({ error: null }),
         loadJobs: async (
           page = 1,
           pageSize = 10,

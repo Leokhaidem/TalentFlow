@@ -26,26 +26,17 @@ const useAssessmentStore = create(
   devtools(
     persist(
       (set, get) => ({
-        // State
-        assessments: {},
         currentAssessment: null,
         responses: {},
         validationErrors: {},
-        loading: false,
-        error: null,
         previewMode: false,
 
-        // Actions
-        setLoading: (loading) => set({ loading }),
-        setError: (error) => set({ error }),
         setPreviewMode: (previewMode) => set({ previewMode }),
-        clearError: () => set({ error: null }),
 
         // Load assessment for a job
         // Load assessment for a job
         loadAssessment: async (jobId) => {
           console.log(`[Store] Loading assessment for jobId: ${jobId}`);
-          set({ loading: true, error: null });
 
           try {
             const response = await axios.get(`/api/assessments/${jobId}`);
@@ -55,16 +46,12 @@ const useAssessmentStore = create(
             console.log(`[Store] Processed assessment:`, assessment);
 
             if (!assessment) {
-              set({ currentAssessment: null, loading: false, error: null });
+              set({ currentAssessment: null });
               return null;
             }
 
-            const { assessments } = get();
             set({
               currentAssessment: assessment,
-              assessments: { ...assessments, [jobId]: assessment },
-              loading: false,
-              error: null,
             });
 
             return assessment;
@@ -75,46 +62,10 @@ const useAssessmentStore = create(
               console.log(`[Store] No assessment found for ${jobId}`);
               set({
                 currentAssessment: null,
-                loading: false,
-                error: "No assessment available for this job position.",
               });
               return null;
             }
 
-            const errorMessage =
-              error.response?.data?.message ||
-              error.message ||
-              "Failed to load assessment";
-            set({
-              error: errorMessage,
-              loading: false,
-            });
-            throw error;
-          }
-        },
-        // Save assessment
-        saveAssessment: async (jobId, assessmentData) => {
-          set({ loading: true, error: null });
-          try {
-            const response = await axios.put(
-              `/api/assessments/${jobId}`,
-              assessmentData
-            );
-            const assessment = response.data?.data ?? response.data;
-            const { assessments } = get();
-
-            set({
-              currentAssessment: assessment,
-              assessments: { ...assessments, [jobId]: assessment },
-              loading: false,
-            });
-
-            return assessment;
-          } catch (error) {
-            set({
-              error: error.response?.data?.message || error.message,
-              loading: false,
-            });
             throw error;
           }
         },
@@ -361,6 +312,28 @@ const useAssessmentStore = create(
           set({ currentAssessment: updatedAssessment });
         },
 
+        // Save assessment to backend
+        saveAssessment: async (jobId, assessment) => {
+          set({ loading: true, error: null });
+          try {
+            const response = await axios.put(`/api/assessments/${jobId}`, assessment);
+            const savedAssessment = response.data?.data ?? response.data;
+            
+            set({ 
+              currentAssessment: savedAssessment,
+              loading: false 
+            });
+            
+            return savedAssessment;
+          } catch (error) {
+            set({
+              error: error.response?.data?.message || error.message,
+              loading: false,
+            });
+            throw error;
+          }
+        },
+
         // Add a new section
         addSection: () => {
           const { currentAssessment } = get();
@@ -548,10 +521,6 @@ const useAssessmentStore = create(
           });
         },
 
-        // Add conditional logic to question
-        addConditionalLogic: (sectionId, questionId, conditional) => {
-          get().updateQuestion(sectionId, questionId, { conditional });
-        },
       }),
       {
         name: "assessment-store",
