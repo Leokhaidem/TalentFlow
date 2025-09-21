@@ -81,10 +81,21 @@ export default function Candidates() {
     addNoteToCandidate?.(candidateId, note);
   };
 
+  // Sort candidates by updatedAt (most recently updated first)
+  const sortCandidatesByUpdate = (candidates) => {
+    return [...candidates].sort((a, b) => {
+      const dateA = new Date(a.updatedAt || a.createdAt);
+      const dateB = new Date(b.updatedAt || b.createdAt);
+      return dateB - dateA; // Most recent first
+    });
+  };
+
   const candidatesByStage = stages.reduce((acc, stage) => {
-    acc[stage.value] = (filteredCandidates || []).filter(
+    const stageCandidates = (filteredCandidates || []).filter(
       (c) => c.stage === stage.value
     );
+    // Sort each stage's candidates by most recently updated
+    acc[stage.value] = sortCandidatesByUpdate(stageCandidates);
     return acc;
   }, {});
 
@@ -201,7 +212,7 @@ export default function Candidates() {
           <CardContent className="p-4">
             {(filteredCandidates || []).length > 0 ? (
               <VirtualizedList
-                items={filteredCandidates}
+                items={sortCandidatesByUpdate(filteredCandidates)}
                 renderItem={renderCandidateItem}
                 containerHeight={600}
               />
