@@ -4,10 +4,9 @@ import MainLayout from "@/components/Layout/MainLayout";
 import Dashboard from "@/pages/Dashboard";
 import Jobs from "@/pages/Jobs";
 import Candidates from "@/pages/Candidates";
-// import Assessments from '@/pages/Assessments';
 import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
-import "./lib/msw.js"; // Initialize MSW
+import "./lib/msw.js";
 import JobDetail from "./pages/JobDetail.jsx";
 import AssessmentBuilder from "./components/assessments/AssessmentBuilder/AssessmentBuilder.jsx";
 import AssessmentTaking from "./components/assessments/AssessmentTaking/AssessmentTaking.jsx";
@@ -26,7 +25,6 @@ function App() {
             <Route path="jobs/:jobId" element={<JobDetail />} />
             <Route path="candidates" element={<Candidates />} />
             <Route path="candidates/:candidateId" element={<CandidateProfile />} />
-            {/* <Route path="assessments" element={<Assessments />} /> */}
             <Route path="assessments/:jobId" element={<AssessmentBuilder />} />
             <Route
               path="assessments/:jobId/take"

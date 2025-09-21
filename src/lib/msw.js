@@ -1,25 +1,17 @@
-// Mock Service Worker setup for TalentFlow API simulation
-
 import { http, HttpResponse, delay } from "msw";
 import { setupWorker } from "msw/browser";
 import { db } from "./database.js";
 
-// Simulate network latency and occasional errors
 const simulateNetworkConditions = async () => {
-  // Random delay between 200-1200ms
   await delay(200 + Math.random() * 1000);
 
-  // Only simulate errors in development
   if (import.meta.env.DEV && Math.random() < 0.075) {
     throw new Error("Simulated network error");
   }
 };
 
-// API Handlers
 const handlers = [
-  // Jobs endpoints
   http.get("/api/jobs", async ({ request }) => {
-    // small read delay
     await delay(100 + Math.random() * 300);
 
     const url = new URL(request.url);
@@ -31,14 +23,12 @@ const handlers = [
     const sort = (url.searchParams.get("sort") || "createdAt").trim();
     const order = (url.searchParams.get("order") || "asc").trim();
 
-    // normalize
     const search = rawSearch.toLowerCase();
     const statusParam =
       rawStatus.toLowerCase() === "all" || rawStatus === ""
         ? null
         : rawStatus.toLowerCase();
 
-    // Debug logs (view in browser console)
     console.log("[MSW] /api/jobs params:", {
       search: rawSearch,
       status: rawStatus,
@@ -95,12 +85,10 @@ const handlers = [
       jobs = [];
     }
 
-    // Apply direction override (if you have ?order=asc|desc)
     if (order === "desc") jobs = jobs.reverse();
 
     console.log("[MSW] jobs before filters:", jobs.length);
 
-    // status filter: only if statusParam is truthy and not "all"
     if (statusParam) {
       jobs = jobs.filter(
         (job) => (job.status || "").toLowerCase() === statusParam
@@ -108,7 +96,6 @@ const handlers = [
       console.log(`[MSW] after status filter (${statusParam}):`, jobs.length);
     }
 
-    // search filter: safe guards for undefined tags / department
     if (search) {
       jobs = jobs.filter((job) => {
         const title = (job.title || "").toLowerCase();
@@ -125,7 +112,6 @@ const handlers = [
       console.log(`[MSW] after search filter ("${search}") :`, jobs.length);
     }
 
-    // pagination
     const total = jobs.length;
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
     const startIndex = (page - 1) * pageSize;

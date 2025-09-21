@@ -41,7 +41,6 @@ export default function Dashboard() {
   }, [loadJobs, loadCandidates]);
 
   useEffect(() => {
-    // Calculate stats when data loads
     const safeJobs = jobs || [];
     const safeCandidates = candidates || [];
     

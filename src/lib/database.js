@@ -1,5 +1,3 @@
-// TalentFlow Database Setup with Dexie (IndexedDB)
-
 import Dexie from "dexie";
 
 export class TalentFlowDB extends Dexie {
@@ -16,11 +14,9 @@ export class TalentFlowDB extends Dexie {
 
   async seedData() {
     const existingJobs = await this.jobs.count();
-    if (existingJobs > 0) return; // Already seeded
+    if (existingJobs > 0) return;
 
     console.log("Seeding TalentFlow database...");
-
-    // Seed Jobs
     const jobTitles = [
       "Senior Frontend Developer",
       "Backend Engineer",
@@ -101,8 +97,6 @@ export class TalentFlowDB extends Dexie {
     }));
 
     await this.jobs.bulkAdd(jobs);
-
-    // Seed Candidates
     const firstNames = [
       "John",
       "Jane",

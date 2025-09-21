@@ -5,7 +5,6 @@ import axios from "axios";
 const useCandidateStore = create(
   devtools(
     persist((set, get) => ({
-      // State
       candidates: [],
       filteredCandidates: [],
       selectedCandidate: null,
@@ -14,8 +13,6 @@ const useCandidateStore = create(
       error: null,
       searchTerm: "",
       stageFilter: "all",
-
-      // Actions
       setCandidates: (candidates) => set({ candidates }),
       setFilteredCandidates: (filteredCandidates) =>
         set({ filteredCandidates }),
@@ -26,7 +23,6 @@ const useCandidateStore = create(
       setSearchTerm: (searchTerm) => set({ searchTerm }),
       setStageFilter: (stageFilter) => set({ stageFilter }),
 
-      // Load single candidate by ID
       loadCandidate: async (candidateId) => {
         set({ loading: true, error: null });
         try {
@@ -48,7 +44,6 @@ const useCandidateStore = create(
         }
       },
 
-      // Load candidates from API
       loadCandidates: async (params = {}) => {
         set({ loading: true, error: null });
         try {
@@ -77,7 +72,6 @@ const useCandidateStore = create(
         }
       },
 
-      // Load candidate timeline
       loadCandidateTimeline: async (candidateId) => {
         try {
           const response = await axios.get(
@@ -85,7 +79,6 @@ const useCandidateStore = create(
           );
           const timelineData = response.data.data || [];
 
-          // Sort timeline by date (newest first)
           const sortedTimeline = timelineData.sort(
             (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
           );
@@ -100,12 +93,10 @@ const useCandidateStore = create(
         }
       },
 
-      // Alias for loadCandidateTimeline (for consistency)
       getTimeline: async (candidateId) => {
         return get().loadCandidateTimeline(candidateId);
       },
 
-      // Create timeline event
       createTimelineEvent: async (
         candidateId,
         eventType,
@@ -113,13 +104,10 @@ const useCandidateStore = create(
       ) => {
         try {
           console.log("Creating timeline event:", candidateId, eventType);
-
-          // Check for duplicate events
           const existingEventsResponse = await axios.get(
             `/api/candidates/${candidateId}/timeline`
           );
 
-          // Skip if same eventType already exists for this candidate
           const duplicate = existingEventsResponse.data.data?.find(
             (e) => e.type === eventType
           );
@@ -152,7 +140,6 @@ const useCandidateStore = create(
         }
       },
 
-      // Create new candidate
       createCandidate: async (candidateData) => {
         set({ loading: true, error: null });
         try {
@@ -170,7 +157,6 @@ const useCandidateStore = create(
 
           get().filterCandidates();
 
-          // Create timeline event for new candidate
           try {
             await get().createTimelineEvent(
               response.data.data.id,
@@ -191,7 +177,6 @@ const useCandidateStore = create(
         }
       },
 
-      // Update candidate
       updateCandidate: async (id, updates) => {
         set({ loading: true, error: null });
         try {
@@ -210,7 +195,6 @@ const useCandidateStore = create(
             loading: false,
           });
 
-          // Update selected candidate if it's the one being updated
           const { selectedCandidate } = get();
           if (selectedCandidate && selectedCandidate.id === id) {
             set({ selectedCandidate: response.data.data });
@@ -225,7 +209,6 @@ const useCandidateStore = create(
         }
       },
 
-      // Move candidate (optimistic update)
       moveCandidate: async (candidateId, newStage) => {
         const { candidates, selectedCandidate } = get();
         const originalCandidates = [...candidates];
@@ -233,7 +216,6 @@ const useCandidateStore = create(
         const currentCandidate = candidates.find((c) => c.id === candidateId);
         const oldStage = currentCandidate?.stage;
 
-        // Stage labels for timeline
         const stageLabels = {
           applied: "Applied",
           screen: "Screening",
@@ -242,15 +224,12 @@ const useCandidateStore = create(
           hired: "Hired",
           rejected: "Rejected",
         };
-
-        // Optimistic update for candidates list
         const updatedCandidates = candidates.map((c) =>
           c.id === candidateId
             ? { ...c, stage: newStage, updatedAt: new Date().toISOString() }
             : c
         );
 
-        // Optimistic update for selected candidate if it matches
         const updatedSelectedCandidate =
           selectedCandidate && selectedCandidate.id === candidateId
             ? {
@@ -290,7 +269,6 @@ const useCandidateStore = create(
           });
           get().filterCandidates();
 
-          // Create timeline event for stage change
           if (oldStage !== response.data.data.stage) {
             try {
               await get().createTimelineEvent(
@@ -308,7 +286,6 @@ const useCandidateStore = create(
 
           return response.data.data;
         } catch (error) {
-          // Rollback on failure
           set({
             candidates: originalCandidates,
             selectedCandidate: originalSelectedCandidate,
@@ -319,7 +296,6 @@ const useCandidateStore = create(
         }
       },
 
-      // Add note
       addNoteToCandidate: async (candidateId, note) => {
         try {
           const noteWithTimestamp = {
@@ -327,7 +303,6 @@ const useCandidateStore = create(
             createdAt: new Date().toISOString(),
           };
 
-          // Add note via API
           const response = await axios.post(
             `/api/candidates/${candidateId}/notes`,
             noteWithTimestamp,
@@ -336,7 +311,6 @@ const useCandidateStore = create(
             }
           );
 
-          // Update local state
           set((state) => {
             const updatedCandidates = state.candidates.map((candidate) =>
               candidate.id === candidateId
@@ -348,7 +322,6 @@ const useCandidateStore = create(
                 : candidate
             );
 
-            // Update selected candidate if it matches
             const updatedSelectedCandidate =
               state.selectedCandidate &&
               state.selectedCandidate.id === candidateId
@@ -390,7 +363,6 @@ const useCandidateStore = create(
             };
           });
 
-          // Create timeline event for note addition
           try {
             await get().createTimelineEvent(
               candidateId,
@@ -413,7 +385,6 @@ const useCandidateStore = create(
         }
       },
 
-      // Filter candidates locally
       filterCandidates: () => {
         const { candidates, searchTerm, stageFilter } = get();
         let filtered = [...(candidates || [])];
@@ -435,7 +406,6 @@ const useCandidateStore = create(
         set({ filteredCandidates: filtered });
       },
 
-      // Delete candidate
       deleteCandidate: async (candidateId) => {
         set({ loading: true, error: null });
         try {
@@ -449,7 +419,7 @@ const useCandidateStore = create(
           set({
             candidates: updatedCandidates,
             loading: false,
-            selectedCandidate: null, // Clear selected candidate if it was deleted
+            selectedCandidate: null,
           });
 
           get().filterCandidates();
@@ -460,12 +430,10 @@ const useCandidateStore = create(
         }
       },
 
-      // Clear selected candidate
       clearSelectedCandidate: () => {
         set({ selectedCandidate: null, timeline: [] });
       },
 
-      // Reset store to initial state
       resetStore: () => {
         set({
           candidates: [],
