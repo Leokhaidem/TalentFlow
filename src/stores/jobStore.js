@@ -22,7 +22,6 @@ const useJobStore = create(
     persist(
       (set, get) => ({
         jobs: [],
-        filteredJobs: [],
         pagination: { page: 1, pageSize: 10, total: 0, totalPages: 1 },
         loading: false,
         error: null,
@@ -34,23 +33,6 @@ const useJobStore = create(
         selectedJobLoading: false,
 
         optimisticUpdates: {},
-        setJobs: (jobs) => set({ jobs }),
-        setFilteredJobs: (filteredJobs) => set({ filteredJobs }),
-        setLoading: (loading) => set({ loading }),
-        setError: (error) => set({ error }),
-        setSearchTerm: (searchTerm) => {
-          set({ searchTerm });
-          get().filterJobs();
-        },
-        setStatusFilter: (statusFilter) => {
-          set({ statusFilter });
-          get().filterJobs();
-        },
-        setSortBy: (sortBy) => {
-          set({ sortBy });
-          get().filterJobs();
-        },
-        setPagination: (pagination) => set({ pagination }),
 
         setSelectedJob: (job) => set({ selectedJob: job }),
         clearSelectedJob: () => set({ selectedJob: null }),
@@ -86,7 +68,6 @@ const useJobStore = create(
               },
               loading: false,
             });
-            get().filterJobs();
           } catch (error) {
             set({
               error: error.response?.data?.message || error.message,
@@ -133,7 +114,6 @@ const useJobStore = create(
             jobs: optimisticJobs,
             optimisticUpdates: newOptimisticUpdates,
           });
-          get().filterJobs();
 
           try {
             const response = await axios.patch(`/api/jobs/${jobId}`, {
@@ -152,7 +132,6 @@ const useJobStore = create(
               jobs: serverJobs,
               optimisticUpdates: finalOptimisticUpdates,
             });
-            get().filterJobs();
 
             return updatedJob;
           } catch (error) {
@@ -169,51 +148,9 @@ const useJobStore = create(
               optimisticUpdates: finalOptimisticUpdates,
               error: error.response?.data?.message || error.message,
             });
-            get().filterJobs();
 
             throw error;
           }
-        },
-
-        filterJobs: () => {
-          const { jobs, searchTerm, statusFilter, sortBy } = get();
-          let filtered = [...(jobs || [])];
-
-          if (searchTerm) {
-            const lower = searchTerm.toLowerCase();
-            filtered = filtered.filter(
-              (job) =>
-                (job.title || "").toLowerCase().includes(lower) ||
-                (job.department || "").toLowerCase().includes(lower) ||
-                (job.location || "").toLowerCase().includes(lower) ||
-                (job.tags || []).some((tag) =>
-                  (tag || "").toLowerCase().includes(lower)
-                )
-            );
-          }
-
-          if (statusFilter !== "all") {
-            filtered = filtered.filter((job) => job.status === statusFilter);
-          }
-
-          filtered.sort((a, b) => {
-            switch (sortBy) {
-              case "newest":
-                return new Date(b.createdAt) - new Date(a.createdAt);
-              case "oldest":
-                return new Date(a.createdAt) - new Date(b.createdAt);
-              case "title":
-                return (a.title || "").localeCompare(b.title || "");
-              case "department":
-                return (a.department || "").localeCompare(b.department || "");
-              case "order":
-                return (a.order || 0) - (b.order || 0);
-              default:
-                return 0;
-            }
-          });
-
-          set({ filteredJobs: filtered });
         },
 
         createJob: async (jobData) => {
@@ -225,7 +162,6 @@ const useJobStore = create(
 
             const { jobs } = get();
             set({ jobs: [newJob, ...jobs], loading: false });
-            get().filterJobs();
             return newJob;
           } catch (error) {
             set({
@@ -248,7 +184,6 @@ const useJobStore = create(
               job.id === id ? updatedJob : job
             );
             set({ jobs: updatedJobs, loading: false });
-            get().filterJobs();
             return updatedJob;
           } catch (error) {
             set({
@@ -287,7 +222,6 @@ const useJobStore = create(
             jobs: updatedJobs,
             optimisticUpdates: newOptimisticUpdates,
           });
-          get().filterJobs();
 
           try {
             const response = await axios.post("/api/jobs/reorder", {
@@ -315,35 +249,10 @@ const useJobStore = create(
               optimisticUpdates: rollbackOptimisticUpdates,
               error: error.response?.data?.message || error.message,
             });
-            get().filterJobs();
             throw error;
           }
         },
 
-        reorderJob: async (id, fromOrder, toOrder) => {
-          const { jobs } = get();
-          const originalJobs = [...jobs];
-
-          const updatedJobs = jobs.map((job) =>
-            job.id === id ? { ...job, order: toOrder } : job
-          );
-          set({ jobs: updatedJobs });
-          get().filterJobs();
-
-          try {
-            const response = await axios.patch(`/api/jobs/${id}/reorder`, {
-              fromOrder,
-              toOrder,
-            });
-            return response.data?.data ?? response.data;
-          } catch (error) {
-            set({ jobs: originalJobs, error: error.message });
-            get().filterJobs();
-            throw error;
-          }
-        },
-
-        clearError: () => set({ error: null }),
       }),
       {
         name: "job-store",

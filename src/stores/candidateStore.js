@@ -13,15 +13,6 @@ const useCandidateStore = create(
       error: null,
       searchTerm: "",
       stageFilter: "all",
-      setCandidates: (candidates) => set({ candidates }),
-      setFilteredCandidates: (filteredCandidates) =>
-        set({ filteredCandidates }),
-      setSelectedCandidate: (selectedCandidate) => set({ selectedCandidate }),
-      setTimeline: (timeline) => set({ timeline }),
-      setLoading: (loading) => set({ loading }),
-      setError: (error) => set({ error }),
-      setSearchTerm: (searchTerm) => set({ searchTerm }),
-      setStageFilter: (stageFilter) => set({ stageFilter }),
 
       loadCandidate: async (candidateId) => {
         set({ loading: true, error: null });
@@ -93,10 +84,6 @@ const useCandidateStore = create(
         }
       },
 
-      getTimeline: async (candidateId) => {
-        return get().loadCandidateTimeline(candidateId);
-      },
-
       createTimelineEvent: async (
         candidateId,
         eventType,
@@ -155,8 +142,6 @@ const useCandidateStore = create(
             loading: false,
           });
 
-          get().filterCandidates();
-
           try {
             await get().createTimelineEvent(
               response.data.data.id,
@@ -169,38 +154,6 @@ const useCandidateStore = create(
               timelineError
             );
           }
-
-          return response.data.data;
-        } catch (error) {
-          set({ error: error.message, loading: false });
-          throw error;
-        }
-      },
-
-      updateCandidate: async (id, updates) => {
-        set({ loading: true, error: null });
-        try {
-          const response = await axios.patch(`/api/candidates/${id}`, updates, {
-            headers: { "Content-Type": "application/json" },
-          });
-
-          const { candidates } = get();
-
-          const updatedCandidates = candidates.map((candidate) =>
-            candidate.id === id ? response.data.data : candidate
-          );
-
-          set({
-            candidates: updatedCandidates,
-            loading: false,
-          });
-
-          const { selectedCandidate } = get();
-          if (selectedCandidate && selectedCandidate.id === id) {
-            set({ selectedCandidate: response.data.data });
-          }
-
-          get().filterCandidates();
 
           return response.data.data;
         } catch (error) {
@@ -239,11 +192,10 @@ const useCandidateStore = create(
               }
             : selectedCandidate;
 
-        set({
-          candidates: updatedCandidates,
-          selectedCandidate: updatedSelectedCandidate,
-        });
-        get().filterCandidates();
+          set({
+            candidates: updatedCandidates,
+            selectedCandidate: updatedSelectedCandidate,
+          });
 
         try {
           const response = await axios.patch(
@@ -267,7 +219,6 @@ const useCandidateStore = create(
             candidates: finalCandidates,
             selectedCandidate: finalSelectedCandidate,
           });
-          get().filterCandidates();
 
           if (oldStage !== response.data.data.stage) {
             try {
@@ -291,7 +242,6 @@ const useCandidateStore = create(
             selectedCandidate: originalSelectedCandidate,
             error: error.message,
           });
-          get().filterCandidates();
           throw error;
         }
       },
@@ -404,47 +354,6 @@ const useCandidateStore = create(
         }
 
         set({ filteredCandidates: filtered });
-      },
-
-      deleteCandidate: async (candidateId) => {
-        set({ loading: true, error: null });
-        try {
-          await axios.delete(`/api/candidates/${candidateId}`);
-
-          const { candidates } = get();
-          const updatedCandidates = candidates.filter(
-            (c) => c.id !== candidateId
-          );
-
-          set({
-            candidates: updatedCandidates,
-            loading: false,
-            selectedCandidate: null,
-          });
-
-          get().filterCandidates();
-          return true;
-        } catch (error) {
-          set({ error: error.message, loading: false });
-          throw error;
-        }
-      },
-
-      clearSelectedCandidate: () => {
-        set({ selectedCandidate: null, timeline: [] });
-      },
-
-      resetStore: () => {
-        set({
-          candidates: [],
-          filteredCandidates: [],
-          selectedCandidate: null,
-          timeline: [],
-          loading: false,
-          error: null,
-          searchTerm: "",
-          stageFilter: "all",
-        });
       },
     })),
     { name: "candidate-store" }
